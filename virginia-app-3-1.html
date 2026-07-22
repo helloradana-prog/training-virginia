@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Virginia · Treino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --roxo-deep:#5B3E8E;
+    --roxo:#8B6DC7;
+    --roxo-soft:#C9B8E8;
+    --azul:#6E9FE8;
+    --azul-soft:#B8D4F5;
+    --branco-brilhante:#FDFCFF;
+    --branco-pastel:#F3EEFC;
+    --texto:#3A2E52;
+    --texto-suave:#7A6FA0;
+    --ok:#7ED6A5;
+    --alerta:#F5A88B;
+    --shadow: 0 8px 30px rgba(91,62,142,0.14);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; font-family:'Jost',sans-serif; background:
+      radial-gradient(circle at 15% 0%, var(--azul-soft) 0%, transparent 45%),
+      radial-gradient(circle at 90% 10%, var(--roxo-soft) 0%, transparent 40%),
+      var(--branco-brilhante);
+    color:var(--texto); min-height:100vh; padding-bottom:90px;
+  }
+  h1,h2,h3,.brand{font-family:'Cormorant Garamond',serif;}
+  header{
+    padding:30px 20px 18px; text-align:center; position:relative;
+  }
+  header .brand-row{display:flex; align-items:baseline; justify-content:center; gap:10px; flex-wrap:wrap;}
+  header .brand{font-size:2.3rem; font-weight:700; color:var(--roxo-deep); letter-spacing:0.5px; margin:0;}
+  header .studio{font-size:0.62rem; letter-spacing:2px; text-transform:uppercase; color:var(--texto-suave); opacity:0.55; font-family:'Jost'; font-weight:400;}
+  .container{max-width:520px; margin:0 auto; padding:0 16px;}
+
+  .card{
+    background:linear-gradient(160deg, #ffffff 0%, var(--branco-pastel) 100%);
+    border-radius:22px; padding:18px 20px; margin-bottom:16px;
+    box-shadow:var(--shadow); border:1px solid rgba(139,109,199,0.12);
+  }
+
+  .week-selector{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .week-selector label{font-size:0.72rem; color:var(--texto-suave); text-transform:uppercase; letter-spacing:1px; white-space:nowrap;}
+  .week-selector select{
+    flex:1; border:1px solid var(--roxo-soft); border-radius:12px; padding:9px 10px;
+    font-family:'Jost'; font-size:0.9rem; color:var(--roxo-deep); background:#fff; font-weight:500;
+  }
+
+  .day-selector{display:flex; gap:8px; overflow-x:auto; padding:4px 2px 14px; scrollbar-width:none;}
+  .day-selector::-webkit-scrollbar{display:none;}
+  .day-btn{
+    flex:1; min-width:64px; padding:10px 6px; border-radius:16px; border:none;
+    background:#fff; color:var(--roxo); font-family:'Jost'; font-weight:500; font-size:0.85rem;
+    box-shadow:0 3px 10px rgba(139,109,199,0.15); cursor:pointer; transition:.25s;
+  }
+  .day-btn.active{
+    background:linear-gradient(135deg, var(--roxo) 0%, var(--roxo-deep) 100%);
+    color:#fff; box-shadow:0 6px 16px rgba(91,62,142,0.35);
+  }
+
+  .day-title{font-size:1.35rem; color:var(--roxo-deep); margin:2px 0 2px;}
+  .day-focus{font-size:0.8rem; color:var(--texto-suave); margin-bottom:14px;}
+
+  .exercise{
+    background:#fff; border-radius:16px; padding:14px 16px; margin-bottom:10px;
+    border-left:4px solid var(--azul); box-shadow:0 3px 12px rgba(110,159,232,0.10);
+  }
+  .exercise.done{border-left-color:var(--ok); opacity:0.75;}
+  .ex-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .ex-name{font-weight:600; font-size:0.95rem; color:var(--texto);}
+  .ex-target{font-size:0.78rem; color:var(--texto-suave); margin-top:2px;}
+  .check{
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--roxo-soft);
+    flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; background:#fff;
+  }
+  .check.checked{background:var(--ok); border-color:var(--ok); color:#fff; font-size:0.85rem;}
+  .ex-inputs{display:flex; gap:8px; margin-top:10px; align-items:flex-end;}
+  .ex-inputs input{
+    flex:1; border:1px solid var(--azul-soft); border-radius:10px; padding:8px 10px;
+    font-family:'Jost'; font-size:0.85rem; background:var(--branco-pastel); color:var(--texto); text-align:center;
+  }
+  .ex-inputs label{font-size:0.68rem; color:var(--texto-suave); display:block; margin-bottom:3px;}
+
+  .cardio-box{
+    background:linear-gradient(135deg, var(--azul-soft), var(--roxo-soft));
+    border-radius:16px; padding:14px 16px; margin-top:4px; color:var(--texto);
+  }
+  .cardio-box b{color:var(--roxo-deep);}
+  .cardio-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+
+  .save-btn{
+    width:100%; padding:13px; border:none; border-radius:14px;
+    background:linear-gradient(135deg,var(--roxo),var(--roxo-deep)); color:#fff;
+    font-family:'Jost'; font-weight:600; font-size:0.9rem; cursor:pointer; margin-top:14px;
+  }
+
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; background:#fff;
+    display:flex; box-shadow:0 -6px 20px rgba(91,62,142,0.15); z-index:20;
+  }
+  nav.tabs button{
+    flex:1; border:none; background:none; padding:14px 4px 10px; font-family:'Jost';
+    font-size:0.72rem; color:var(--texto-suave); cursor:pointer; letter-spacing:0.3px;
+  }
+  nav.tabs button.active{color:var(--roxo-deep); font-weight:600;}
+
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  .guia-section h3{color:var(--roxo-deep); font-size:1.15rem; margin:18px 0 8px;}
+  .guia-item{background:#fff; border-radius:14px; padding:12px 14px; margin-bottom:8px; box-shadow:0 3px 10px rgba(139,109,199,0.10);}
+  .guia-item .g-name{font-weight:600; color:var(--roxo);}
+  .guia-item .g-muscle{display:inline-block; font-size:0.68rem; color:#fff; background:var(--azul); padding:2px 9px; border-radius:20px; margin-left:8px; vertical-align:middle;}
+  .guia-item .g-desc{font-size:0.83rem; color:var(--texto); margin-top:5px; line-height:1.4;}
+  .rpe-scale{display:flex; flex-direction:column; gap:6px;}
+  .rpe-row{display:flex; align-items:center; gap:10px; background:#fff; border-radius:12px; padding:8px 12px;}
+  .rpe-num{width:32px; height:28px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:0.8rem; flex-shrink:0;}
+  .rpe-note{font-size:0.72rem; color:var(--texto-suave); background:#fff; border-radius:12px; padding:10px 12px; margin-top:6px;}
+
+  .eval-row{margin-bottom:16px;}
+  .eval-row label{display:block; font-size:0.85rem; margin-bottom:6px; color:var(--texto);}
+  .scale-5{display:flex; gap:6px;}
+  .scale-5 button{
+    flex:1; padding:10px 0; border-radius:10px; border:1px solid var(--roxo-soft); background:#fff;
+    color:var(--roxo); font-family:'Jost'; font-weight:500; cursor:pointer;
+  }
+  .scale-5 button.sel{background:var(--roxo); color:#fff; border-color:var(--roxo);}
+  textarea{
+    width:100%; border:1px solid var(--azul-soft); border-radius:12px; padding:10px;
+    font-family:'Jost'; font-size:0.85rem; background:var(--branco-pastel); color:var(--texto); resize:vertical; min-height:65px;
+  }
+  input[type="number"], input[type="text"]{
+    border:1px solid var(--azul-soft); border-radius:10px; padding:9px 11px;
+    font-family:'Jost'; font-size:0.88rem; background:var(--branco-pastel); color:var(--texto);
+  }
+
+  .perfil-name{text-align:center; font-size:1.4rem; color:var(--roxo-deep); margin:0;}
+  .perfil-sub{text-align:center; color:var(--texto-suave); font-size:0.85rem; margin-top:-4px; margin-bottom:18px;}
+  .medida-field{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    background:#fff; border-radius:14px; padding:10px 16px; margin-bottom:9px;
+    box-shadow:0 3px 10px rgba(139,109,199,0.10);
+  }
+  .medida-field label{font-size:0.82rem; color:var(--texto-suave); font-family:'Jost'; white-space:nowrap;}
+  .medida-field input{
+    border:none; background:transparent; text-align:right; font-family:'Cormorant Garamond';
+    font-size:1.2rem; font-weight:600; color:var(--roxo-deep); width:110px; padding:2px 0;
+  }
+  .medida-field input:focus{outline:none; border-bottom:1.5px solid var(--roxo-soft);}
+  .medidas-fixas{background:#fff; border-radius:14px; padding:6px 16px; box-shadow:0 3px 10px rgba(139,109,199,0.10);}
+  .mf-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(139,109,199,0.12); font-size:0.85rem;}
+  .mf-row:last-child{border-bottom:none;}
+  .mf-row span:first-child{color:var(--texto-suave);}
+  .mf-row span:last-child{color:var(--roxo-deep); font-family:'Cormorant Garamond'; font-weight:600; font-size:1.05rem;}
+
+  .save-toast{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-60px);
+    background:var(--roxo-deep); color:#fff; padding:8px 18px; border-radius:30px; font-size:0.8rem;
+    transition:.35s; z-index:50; opacity:0;
+  }
+  .save-toast.show{transform:translateX(-50%) translateY(0); opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="save-toast" id="toast">Salvo ✓</div>
+
+<header>
+  <div class="brand-row">
+    <p class="brand">Virginia</p>
+  </div>
+  <p class="studio">Hellora Consultoria</p>
+</header>
+
+<div class="container">
+
+  <!-- TREINO -->
+  <div class="tab-content active" id="tab-treino">
+    <div class="card" style="padding-bottom:10px; margin-bottom:10px;">
+      <div class="week-selector">
+        <label>Semana</label>
+        <select id="weekSelectTreino"></select>
+      </div>
+    </div>
+    <div class="day-selector" id="daySelector"></div>
+    <div class="card" id="workoutCard"></div>
+  </div>
+
+  <!-- GUIA (execução + intensidade + músculo) -->
+  <div class="tab-content" id="tab-guia">
+    <div class="card guia-section">
+      <h3 style="margin-top:0;">Guia de Execução por Exercício</h3>
+      <div id="guiaExecucaoList"></div>
+
+      <h3>Guia de Intensidade (RPE)</h3>
+      <p class="rpe-note">O RPE indica apenas o nível de esforço-alvo de cada exercício — ele não muda semana a semana. Quem evolui ao longo das 13 semanas é a carga (kg), registrada na aba Treino.</p>
+      <div class="rpe-scale">
+        <div class="rpe-row"><div class="rpe-num" style="background:#7ED6A5">1-2</div><span>Muito leve — dá pra fazer muitas repetições a mais</span></div>
+        <div class="rpe-row"><div class="rpe-num" style="background:#A8D98D">3-4</div><span>Leve — sobrariam 5+ repetições</span></div>
+        <div class="rpe-row"><div class="rpe-num" style="background:#F5D06B">5-6</div><span>Moderado — sobrariam 3-4 repetições</span></div>
+        <div class="rpe-row"><div class="rpe-num" style="background:#F5A88B">7-8</div><span>Puxado — sobrariam 1-2 repetições, alvo da maioria das séries</span></div>
+        <div class="rpe-row"><div class="rpe-num" style="background:#E86A6A">9-10</div><span>Máximo — nenhuma repetição sobrando (só quando indicado, ex: HIIT)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVALIAÇÃO -->
+  <div class="tab-content" id="tab-avaliacao">
+    <div class="card">
+      <div class="week-selector">
+        <label>Semana</label>
+        <select id="weekSelectAvaliacao"></select>
+      </div>
+      <h3 style="color:var(--roxo-deep); margin-top:4px;">Check-in Semanal</h3>
+
+      <div class="eval-row">
+        <label>Frequência — quantos treinos concluiu essa semana?</label>
+        <div class="scale-5" data-field="frequencia" data-max="4">
+          <button data-v="0">0</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button>
+        </div>
+      </div>
+      <div class="eval-row">
+        <label>Humor</label>
+        <div class="scale-5" data-field="humor">
+          <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button>
+        </div>
+      </div>
+      <div class="eval-row">
+        <label>Sono</label>
+        <div class="scale-5" data-field="sono">
+          <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button>
+        </div>
+      </div>
+      <div class="eval-row">
+        <label>Stress</label>
+        <div class="scale-5" data-field="stress">
+          <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button>
+        </div>
+      </div>
+      <div class="eval-row">
+        <label>Alimentação</label>
+        <div class="scale-5" data-field="alimentacao">
+          <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button>
+        </div>
+      </div>
+      <div class="eval-row">
+        <label>Dores e desconfortos</label>
+        <textarea id="doresDesconfortos" placeholder="Ex: incômodo leve no joelho esquerdo após treino de perna..."></textarea>
+      </div>
+      <div class="eval-row">
+        <label>Observações gerais</label>
+        <textarea id="obsSemana" placeholder="Como foi a semana..."></textarea>
+      </div>
+      <button class="save-btn" onclick="salvarAvaliacao()">Salvar Check-in da Semana</button>
+    </div>
+  </div>
+
+  <!-- PERFIL -->
+  <div class="tab-content" id="tab-perfil">
+    <div class="card">
+      <p class="perfil-name">Virginia</p>
+      <p class="perfil-sub">32 anos · Objetivo: Emagrecimento</p>
+
+      <div class="medidas-fixas">
+        <div class="mf-row"><span>Altura</span><span>1,72 m</span></div>
+        <div class="mf-row"><span>Cintura</span><span>94 cm</span></div>
+        <div class="mf-row"><span>Quadril</span><span>115 cm</span></div>
+        <div class="mf-row"><span>Abdômen</span><span>99 cm</span></div>
+        <div class="mf-row"><span>Coxa</span><span>76 cm</span></div>
+        <div class="mf-row"><span>Bíceps</span><span>36 cm</span></div>
+      </div>
+
+      <div class="medida-field" style="margin-top:14px;">
+        <label>Peso (kg)</label>
+        <input type="text" id="f-peso" placeholder="103">
+      </div>
+
+      <button class="save-btn" onclick="salvarPerfil()">Salvar</button>
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabs">
+  <button class="active" data-tab="treino">TREINO</button>
+  <button data-tab="guia">GUIA</button>
+  <button data-tab="avaliacao">AVALIAÇÃO</button>
+  <button data-tab="perfil">PERFIL</button>
+</nav>
+
+<script>
+// ---------- FIREBASE ----------
+const firebaseConfig = {
+  databaseURL: "https://helloradana-consultoria-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ALUNO_ID = "virginia";
+const dbRef = db.ref('/alunos/' + ALUNO_ID + '/state');
+const TOTAL_SEMANAS = 13;
+
+let state = { peso: 103 };
+
+// Chave unificada compartilhada com a dashboard e os outros apps de aluno:
+// "w{semana}-{treino}-{exercicioId}" -> { done: bool, load?: number }
+function keyFor(week, day, slug){ return 'w' + week + '-' + day + '-' + slug; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg || 'Salvo ✓';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1300);
+}
+
+function saveState(msg){
+  localStorage.setItem('virginia_state', JSON.stringify(state));
+  dbRef.set(state).then(()=>showToast(msg)).catch(e=>console.error('Firebase save error', e));
+}
+
+function loadState(){
+  const local = localStorage.getItem('virginia_state');
+  if(local){ state = JSON.parse(local); }
+  dbRef.once('value').then(snap=>{
+    const remote = snap.val();
+    if(remote){ state = remote; }
+    if(!state.peso) state.peso = 103;
+    if(!state.evalNotas) state.evalNotas = {};
+    if(!state.evalObs) state.evalObs = {};
+    if(!state.dores) state.dores = {};
+    renderAll();
+  }).catch(e=>console.error('Firebase load error', e));
+}
+
+// ---------- DADOS DE TREINO (RPE fixo = intensidade alvo, não muda por semana) ----------
+const workouts = {
+  A: {
+    title: "Treino A", focus: "Inferior · Glúteo / Posterior",
+    exercises: [
+      {id:"a1", name:"Elevação Pélvica (Hip Thrust)", target:"4 séries x 10-12 reps · desc. 60-90s · RPE 8"},
+      {id:"a2", name:"Levantamento Terra Romeno", target:"4 séries x 10-12 reps · desc. 60-90s · RPE 7"},
+      {id:"a3", name:"Stiff (halteres ou barra)", target:"3 séries x 10 reps · desc. 45-60s · RPE 7"},
+      {id:"a4", name:"Cadeira Abdutora", target:"3 séries x 10 reps · desc. 45s · RPE 6"},
+      {id:"a5", name:"Flexora Vertical", target:"3 séries x 10 reps · desc. 45-60s · RPE 6"},
+      {id:"a6", name:"Panturrilha em pé", target:"3 séries x 15 reps · desc. 30-45s · RPE 6"},
+    ],
+    cardioId:"cardioA", cardio: "Cardio contínuo moderado — 25 a 30 minutos (esteira inclinada ou bike)"
+  },
+  B: {
+    title: "Treino B", focus: "Superior · Push / Pull",
+    exercises: [
+      {id:"b1", name:"Puxada no Pulley (pegada aberta)", target:"4 séries x 10-12 reps · desc. 60-90s · RPE 7"},
+      {id:"b2", name:"Remada Cavalinho", target:"4 séries x 10-12 reps · desc. 60-90s · RPE 7"},
+      {id:"b3", name:"Supino Máquina", target:"3 séries x 12 reps · desc. 60s · RPE 7"},
+      {id:"b4", name:"Desenvolvimento de Ombro", target:"3 séries x 10 reps · desc. 60s · RPE 7"},
+      {id:"b5", name:"Tríceps Testa", target:"3 séries x 10 reps · desc. 45s · RPE 8"},
+      {id:"b6", name:"Rosca Martelo", target:"3 séries x 10 reps · desc. 45s · RPE 7"},
+      {id:"b7", name:"Abdominal Infra (máquina)", target:"3 séries x 15 reps · desc. 30-45s · RPE 6 · core do dia"},
+    ],
+    cardioId:"cardioB", cardio: "Cardio contínuo moderado — 20 a 25 minutos"
+  },
+  C: {
+    title: "Treino C", focus: "Inferior · Quadríceps / Glúteo",
+    exercises: [
+      {id:"c1", name:"Leg Press (ângulo moderado)", target:"4 séries x 12 reps · desc. 60-90s · RPE 7"},
+      {id:"c2", name:"Extensora", target:"4 séries x 12-15 reps · desc. 45-60s · RPE 6"},
+      {id:"c3", name:"Cadeira Adutora", target:"3 séries x 15 reps · desc. 45s · RPE 6"},
+      {id:"c4", name:"Glúteo 4 Apoios (coice)", target:"3 séries x 10 reps · desc. 45s · RPE 6"},
+      {id:"c5", name:"Panturrilha sentado", target:"3 séries x 15 reps · desc. 30-45s · RPE 6"},
+    ],
+    cardioId:"cardioC", cardio: "HIIT puxado — 25 a 28 minutos · RPE 8-9. 5min aquecimento leve + 8 a 10 rounds de 40seg forte / 40seg leve + 5min desaquecimento."
+  },
+  D: {
+    title: "Treino D", focus: "Superior Full + Core",
+    exercises: [
+      {id:"d1", name:"Pulley Frontal", target:"3 séries x 10 reps · desc. 60s · RPE 6"},
+      {id:"d2", name:"Remada Unilateral (serrote)", target:"4 séries x 10-12 reps · desc. 60-90s · RPE 7"},
+      {id:"d3", name:"Elevação Lateral", target:"3 séries x 10 reps · desc. 45s · RPE 6"},
+      {id:"d4", name:"Tríceps Francês", target:"3 séries x 10 reps · desc. 45s · RPE 6"},
+      {id:"d5", name:"Rosca Scott", target:"3 séries x 10 reps · desc. 45s · RPE 6"},
+      {id:"d6", name:"Abdominal c/ Rotação no Cabo (oblíquo)", target:"3 séries x 15 reps · desc. 30-45s · RPE 6 · core do dia"},
+    ],
+    cardioId:"cardioD", cardio: "Cardio contínuo moderado — 20 a 25 minutos"
+  }
+};
+
+// ---------- GUIA DE EXECUÇÃO (todos os exercícios + músculo focado) ----------
+const guia = [
+  {name:"Elevação Pélvica (Hip Thrust)", muscle:"Glúteo", desc:"Apoio das escápulas no banco, queixo levemente retraído. Subir até quadril alinhado com joelho e ombro — evitar hiperextensão lombar no topo. Base de impulso no calcanhar."},
+  {name:"Levantamento Terra Romeno", muscle:"Posterior de coxa / Glúteo", desc:"Joelhos com flexão leve e fixa, o quadril inicia o movimento pra trás, lombar sempre neutra (nunca arredondar). Descer até sentir alongamento no posterior de coxa."},
+  {name:"Stiff (halteres ou barra)", muscle:"Posterior de coxa", desc:"Pernas quase estendidas, quadril empurra pra trás, tronco desce reto sem arredondar as costas."},
+  {name:"Cadeira Abdutora", muscle:"Glúteo médio", desc:"Tronco fixo no encosto, abrir as pernas contra a resistência de forma controlada, sem usar impulso."},
+  {name:"Flexora Vertical", muscle:"Posterior de coxa", desc:"Amplitude controlada, sem travar o joelho no topo nem soltar de forma brusca — atenção redobrada pelo histórico de cirurgia no joelho direito."},
+  {name:"Panturrilha em pé", muscle:"Panturrilha", desc:"Subir na ponta dos pés com amplitude total, pausa breve no topo, descer controlado até alongar."},
+  {name:"Puxada no Pulley (pegada aberta)", muscle:"Costas", desc:"Peito aberto, puxar levando os cotovelos pra baixo e levemente pra trás, sem balançar o tronco."},
+  {name:"Remada Cavalinho", muscle:"Costas", desc:"Puxar levando o cotovelo pra trás, sem impulso do tronco, escápulas se aproximando no final do movimento."},
+  {name:"Supino Máquina", muscle:"Peitoral", desc:"Escápulas retraídas e fixas no banco, descida controlada, sem travar o cotovelo com força no topo."},
+  {name:"Desenvolvimento de Ombro", muscle:"Ombro", desc:"Core contraído, empurrar para cima sem hiperestender a lombar, cotovelos não vão totalmente atrás da linha do corpo."},
+  {name:"Tríceps Testa", muscle:"Tríceps", desc:"Cotovelos fixos apontando pro teto, descer a barra/halteres até perto da testa, estender sem travar com força."},
+  {name:"Rosca Martelo", muscle:"Bíceps", desc:"Cotovelos fixos ao lado do corpo, pegada neutra, subir sem balançar o tronco."},
+  {name:"Abdominal Infra (máquina)", muscle:"Core (reto abdominal, porção inferior)", desc:"Movimento controlado, sem puxar o pescoço, expirar na contração."},
+  {name:"Leg Press (ângulo moderado)", muscle:"Quadríceps", desc:"Ângulo moderado, pés na largura dos ombros, não deixar o joelho ultrapassar demais a linha do pé, evitar descer além do confortável."},
+  {name:"Extensora", muscle:"Quadríceps", desc:"Amplitude controlada, sem travar o joelho no topo nem soltar de forma brusca — atenção redobrada pelo histórico de cirurgia no joelho direito."},
+  {name:"Cadeira Adutora", muscle:"Adutores", desc:"Tronco fixo, fechar as pernas contra a resistência de forma controlada, sem usar impulso."},
+  {name:"Glúteo 4 Apoios (coice)", muscle:"Glúteo", desc:"Apoio de mãos e joelhos, empurrar o calcanhar em direção ao teto sem abrir o quadril nem usar impulso da lombar."},
+  {name:"Panturrilha sentado", muscle:"Panturrilha", desc:"Subir na ponta dos pés com amplitude total, pausa breve no topo, descer controlado."},
+  {name:"HIIT", muscle:"Cardiovascular / Emagrecimento", desc:"5min aquecimento leve + 8 a 10 rounds de 40s em ritmo forte / 40s em ritmo leve de recuperação + 5min de desaquecimento."},
+  {name:"Pulley Frontal", muscle:"Costas", desc:"Peito aberto, puxar levando os cotovelos pra baixo e levemente pra trás, sem balançar o tronco."},
+  {name:"Remada Unilateral (serrote)", muscle:"Costas", desc:"Apoio no banco, puxar levando o cotovelo pra trás mantendo o tronco estável, sem rotacionar."},
+  {name:"Elevação Lateral", muscle:"Ombro", desc:"Cotovelos levemente flexionados, subir até a linha do ombro sem encolher o trapézio, descida controlada."},
+  {name:"Tríceps Francês", muscle:"Tríceps", desc:"Cotovelos fixos apontando pro teto, descer atrás da cabeça controlado, estender sem travar com força."},
+  {name:"Rosca Scott", muscle:"Bíceps", desc:"Braços apoiados no banco scott, subir sem tirar o cotovelo do apoio, descida controlada até quase estender."},
+  {name:"Abdominal c/ Rotação no Cabo (oblíquo)", muscle:"Core (oblíquos)", desc:"Movimento controlado, sem puxar o pescoço, rotação vem do tronco e não dos braços."},
+  {name:"Cardio Contínuo Moderado", muscle:"Cardiovascular / Emagrecimento", desc:"Ritmo constante que permite conversar com esforço, mas sem tranquilidade total — indicado pra dias sem HIIT."},
+];
+
+let currentDay = "A";
+let currentWeekTreino = 1;
+let currentWeekAvaliacao = 1;
+
+function populateWeekSelects(){
+  const selT = document.getElementById('weekSelectTreino');
+  const selA = document.getElementById('weekSelectAvaliacao');
+  [selT, selA].forEach(sel=>{
+    sel.innerHTML = '';
+    for(let i=1;i<=TOTAL_SEMANAS;i++){
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = 'Semana ' + i + ' de ' + TOTAL_SEMANAS;
+      sel.appendChild(opt);
+    }
+  });
+  selT.value = currentWeekTreino;
+  selA.value = currentWeekAvaliacao;
+  selT.onchange = ()=>{ currentWeekTreino = parseInt(selT.value); renderWorkout(); };
+  selA.onchange = ()=>{ currentWeekAvaliacao = parseInt(selA.value); renderAvaliacao(); };
+}
+
+function renderDaySelector(){
+  const sel = document.getElementById('daySelector');
+  sel.innerHTML = '';
+  Object.keys(workouts).forEach(day=>{
+    const btn = document.createElement('button');
+    btn.className = 'day-btn' + (day===currentDay ? ' active' : '');
+    btn.textContent = 'Treino ' + day;
+    btn.onclick = ()=>{ currentDay = day; renderDaySelector(); renderWorkout(); };
+    sel.appendChild(btn);
+  });
+}
+
+function getExerciseState(week, day, slug){
+  return state[keyFor(week, day, slug)] || {};
+}
+
+function renderWorkout(){
+  const w = workouts[currentDay];
+  const card = document.getElementById('workoutCard');
+  let html = `<p class="day-title">${w.title}</p><p class="day-focus">${w.focus} · Semana ${currentWeekTreino}</p>`;
+  w.exercises.forEach(ex=>{
+    const exState = getExerciseState(currentWeekTreino, currentDay, ex.id);
+    const done = exState.done || false;
+    const load = (exState.load !== undefined && exState.load !== null) ? exState.load : '';
+    html += `
+      <div class="exercise ${done?'done':''}" id="ex-${ex.id}">
+        <div class="ex-top">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-target">${ex.target}</div>
+          </div>
+          <div class="check ${done?'checked':''}" onclick="toggleDone('${ex.id}')">${done?'✓':''}</div>
+        </div>
+        <div class="ex-inputs">
+          <div style="flex:1"><label>Carga desta semana (kg)</label><input type="number" value="${load}" onchange="updateLoad('${ex.id}',this.value)"></div>
+        </div>
+      </div>`;
+  });
+  const cardioState = getExerciseState(currentWeekTreino, currentDay, w.cardioId);
+  const cardioDone = cardioState.done || false;
+  html += `<div class="cardio-box">
+      <div class="cardio-top">
+        <div><b>Cardio:</b><br>${w.cardio}</div>
+        <div class="check ${cardioDone?'checked':''}" onclick="toggleCardio()">${cardioDone?'✓':''}</div>
+      </div>
+    </div>`;
+  html += `<button class="save-btn" onclick="salvarTreinoCompleto()">Salvar</button>`;
+  card.innerHTML = html;
+}
+
+function toggleDone(id){
+  const k = keyFor(currentWeekTreino, currentDay, id);
+  if(!state[k]) state[k] = {};
+  state[k].done = !state[k].done;
+  renderWorkout();
+}
+
+function updateLoad(id, value){
+  const k = keyFor(currentWeekTreino, currentDay, id);
+  if(!state[k]) state[k] = {};
+  const n = parseFloat(value);
+  state[k].load = isNaN(n) ? undefined : n;
+}
+
+function toggleCardio(){
+  const w = workouts[currentDay];
+  const k = keyFor(currentWeekTreino, currentDay, w.cardioId);
+  if(!state[k]) state[k] = {};
+  state[k].done = !state[k].done;
+  renderWorkout();
+}
+
+function salvarTreinoCompleto(){
+  saveState('Treino salvo ✓');
+}
+
+// ---------- GUIA ----------
+function renderGuia(){
+  const list = document.getElementById('guiaExecucaoList');
+  list.innerHTML = guia.map(g => `
+    <div class="guia-item">
+      <span class="g-name">${g.name}</span><span class="g-muscle">${g.muscle}</span>
+      <div class="g-desc">${g.desc}</div>
+    </div>
+  `).join('');
+}
+
+// ---------- AVALIAÇÃO ----------
+document.querySelectorAll('.scale-5').forEach(group=>{
+  group.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = ()=>{
+      group.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel');
+    };
+  });
+});
+
+function getWeekAvaliacao(week){
+  if(!state.evalNotas[week]) state.evalNotas[week] = {};
+  return state.evalNotas[week];
+}
+
+function salvarAvaliacao(){
+  const notas = getWeekAvaliacao(currentWeekAvaliacao);
+  document.querySelectorAll('#tab-avaliacao .scale-5').forEach(group=>{
+    const sel = group.querySelector('button.sel');
+    if(sel) notas[group.dataset.field] = parseInt(sel.dataset.v, 10);
+  });
+  state.dores[currentWeekAvaliacao] = document.getElementById('doresDesconfortos').value;
+  state.evalObs[currentWeekAvaliacao] = document.getElementById('obsSemana').value;
+  saveState('Check-in salvo ✓');
+}
+
+function renderAvaliacao(){
+  const notas = getWeekAvaliacao(currentWeekAvaliacao);
+  document.querySelectorAll('#tab-avaliacao .scale-5').forEach(group=>{
+    const field = group.dataset.field;
+    group.querySelectorAll('button').forEach(b=>{
+      b.classList.toggle('sel', notas[field] !== undefined && String(notas[field]) === b.dataset.v);
+    });
+  });
+  document.getElementById('doresDesconfortos').value = state.dores[currentWeekAvaliacao] || '';
+  document.getElementById('obsSemana').value = state.evalObs[currentWeekAvaliacao] || '';
+}
+
+// ---------- PERFIL ----------
+function salvarPerfil(){
+  const val = document.getElementById('f-peso').value;
+  if(val) state.peso = parseFloat(val);
+  saveState('Salvo ✓');
+  renderPerfil();
+}
+
+function renderPerfil(){
+  document.getElementById('f-peso').value = state.peso || 103;
+}
+
+// ---------- NAV ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  };
+});
+
+function renderAll(){
+  populateWeekSelects();
+  renderDaySelector();
+  renderWorkout();
+  renderGuia();
+  renderAvaliacao();
+  renderPerfil();
+}
+
+loadState();
+</script>
+</body>
+</html>
